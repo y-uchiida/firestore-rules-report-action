@@ -2,6 +2,18 @@ import * as core from '@actions/core'
 import * as github from '@actions/github'
 import axios from 'axios'
 import replaceComment from '@aki77/actions-replace-comment'
+import fs from 'fs'
+import {CoverageReport} from './CoverageReport'
+
+/**
+ * Validate given argument string to be matched url pattern
+ * @param url string to be validated
+ * @returns return true if valid URL string, if not false
+ */
+const isValidUrl = (url: string): boolean => {
+  const pattern = /^(http|https):\/\/[\w/:%#\\$&\\?\\(\\)~\\.=\\+\\-]+$/
+  return pattern.test(url)
+}
 
 async function run(): Promise<void> {
   try {
@@ -10,8 +22,15 @@ async function run(): Promise<void> {
     const reportUrl: string = core.getInput('report-url')
     core.setOutput('url', reportUrl)
 
-    const result = await axios.get(reportUrl)
-    const data = result.data
+    let data: CoverageReport
+    if (isValidUrl(reportUrl)) {
+      const result = await axios.get(reportUrl)
+      data = result.data
+    } else {
+      const raw = await fs.promises.readFile(reportUrl, 'utf-8')
+      data = JSON.parse(raw)
+    }
+
     const output = []
     for (const report of data.report) {
       if (!('values' in report)) {
@@ -42,7 +61,7 @@ async function run(): Promise<void> {
       body: `Firestore rules coverage report!\n${comment}`
     })
   } catch (error) {
-    core.setFailed(error)
+    core.setFailed(error as Error)
     core.setFailed(JSON.stringify(github.context, null, ' '))
     core.setFailed(core.getInput('report-url'))
   }

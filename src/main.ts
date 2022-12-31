@@ -1,7 +1,6 @@
 import * as core from '@actions/core'
 import * as github from '@actions/github'
 import axios from 'axios'
-import replaceComment from '@aki77/actions-replace-comment'
 import fs from 'fs'
 import {CoverageReport} from './CoverageReport'
 
@@ -17,8 +16,6 @@ const isValidUrl = (url: string): boolean => {
 
 async function run(): Promise<void> {
   try {
-    const token = core.getInput('token', {required: true})
-
     const reportUrl: string = core.getInput('report-url')
     core.setOutput('url', reportUrl)
 
@@ -45,21 +42,15 @@ async function run(): Promise<void> {
       .sort((a, b) => (a.number > b.number ? 1 : -1))
       .map(a => `${a.number} ${a.line}`)
       .join('\n')
-    const {
-      issue: {number: issue_number},
-      repo: {owner, repo}
-    } = github.context
     const comment =
       output.length > 0
         ? `:scream: Lack of test rule lines!\n\`\`\`\n${content}\n\`\`\``
         : ':tada: Security rule test is covered!'
-    await replaceComment({
-      token,
-      issue_number,
-      owner,
-      repo,
-      body: `Firestore rules coverage report!\n${comment}`
-    })
+    await fs.promises.writeFile(
+      `${process.env.GITHUB_WORKSPACE}/pr_comment_body.txt`,
+      `Firestore rules coverage report!\n${comment}`,
+      'utf-8'
+    )
   } catch (error) {
     core.setFailed(error as Error)
     core.setFailed(JSON.stringify(github.context, null, ' '))

@@ -21,4 +21,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: ./
         with:
+          token: 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
+          # report-url: 'http://localhost:8880/emulator/v1/projects/demo-fir-react-testing-sample:ruleCoverage'
+          report-url: './securityRuleCoverageReport.json'
           milliseconds: 1000
